@@ -59,9 +59,54 @@ let validusers = users.filter((user) => {
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    const isbn = req.params.isbn; // ISBN from the route
+    const reviewText = req.query.review; // Review from query parameter
+    const username = req.session.authorization.username; // Username from session
+
+    if (!reviewText) {
+        return res.status(400).json({ message: "Review text is required." });
+    }
+
+    if (!books[isbn]) {
+        return res.status(404).json({ message: "Book not found." });
+    }
+
+    // Initialize reviews if they don't exist
+    if (!books[isbn].reviews) {
+        books[isbn].reviews = {};
+    }
+
+    // Check if the user has already reviewed this book
+    if (books[isbn].reviews[username]) {
+        books[isbn].reviews[username] = reviewText;
+        return res.status(200).json({ message: "Review updated successfully." });
+    } else {
+        books[isbn].reviews[username] = reviewText;
+        return res.status(201).json({ message: "Review added successfully." });
+    }
 });
+
+// Delete a book review
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+    const isbn = req.params.isbn;                   // ISBN from the route
+    const username = req.session.authorization.username;  // Username from the session
+
+    // Check if the book with the given ISBN exists
+    if (!books[isbn]) {
+        return res.status(404).json({ message: "Book not found." });
+    }
+
+    // Check if the book has reviews
+    if (!books[isbn].reviews || !books[isbn].reviews[username]) {
+        return res.status(404).json({ message: "Review not found for this user." });
+    }
+
+    // Delete the review for the logged-in user
+    delete books[isbn].reviews[username];
+
+    return res.status(200).json({ message: "Review deleted successfully." });
+});
+
 
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
